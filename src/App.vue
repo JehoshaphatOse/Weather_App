@@ -10,7 +10,13 @@ const errormessage = ref('')
 const apiUrl = ref('https://api.weatherapi.com/v1/current.json?key=1243f23a41df434aa6a150725232809')
 const searchedCityData = ref()
 const loader = ref(false)
-const show = ref()
+const latitude = ref()
+const longitude = ref()
+const apiUrl1 = ref('https://api.weatherapi.com/v1/current.json?')
+const apikey = ref('1243f23a41df434aa6a150725232809')
+const currentCityData = ref()
+const isFahrenheit = ref()
+const degreeCelcius = ref()
 
 const switchInitialView = () => {
   isInitialView.value = false
@@ -79,10 +85,40 @@ async function fetchSearchedCityWeather() {
     errormessage.value = false
   }
 }
+
+const viewCurrentCityWeather = () => {
+  navigator.geolocation.getCurrentPosition((data) => {
+    latitude.value = data.coords.latitude
+    longitude.value = data.coords.longitude
+    console.log(longitude.value)
+    console.log(latitude.value)
+    fetchCurrentCityWeather()
+    async function fetchCurrentCityWeather() {
+      showLoader()
+      if (latitude.value !== undefined && longitude.value !== undefined) {
+        let response = await fetch(
+          `${apiUrl1.value}q=${latitude.value},${longitude.value}&key=${apikey.value}`
+        )
+        hideLoader()
+        let data = await response.json()
+        searchedCityData.value = data
+        console.log(data)
+      }
+    }
+  })
+  viewPopularCities()
+}
 const viewPopularCities = (city) => {
   searchedCityData.value = city
   setShowSearchedCities(true)
   errormessage.value = false
+}
+const changeUnit = () => {
+  if (isFahrenheit) {
+    const unit = parseInt(degreeCelcius.value.textContent)
+    isFahrenheit.value = Math.round(unit * (9 / 5) + 32)
+    console.log(isFahrenheit.value)
+  }
 }
 </script>
 <template>
@@ -137,12 +173,14 @@ const viewPopularCities = (city) => {
             </div>
             <div class="flex items-center justify-between">
               <h1
+                ref="degreeCelcius"
                 id="Temp4"
                 class="text-3xl font-bold text-center mt-4 text-yellow-500 cursor-pointer"
               >
                 {{ Math.round(searchedCityData.current.temp_c) }}&#8451;
               </h1>
               <svg
+                @click="changeUnit"
                 class="mt-4"
                 xmlns="http://www.w3.org/2000/svg"
                 xml:space="preserve"
@@ -164,18 +202,18 @@ const viewPopularCities = (city) => {
                 id="fahrenheit_temp"
                 class="text-3xl font-bold text-center mt-4 text-yellow-500 cursor-pointer"
               >
-                &#8457;
+                {{ isFahrenheit }} &#8457;
               </h1>
             </div>
           </div>
         </div>
-        <div class="bg-slate-100 mx-8 p-3 rounded-lg">
+        <div class="bg-slate-100 p-3 rounded-lg">
           <h1 class="text-lg font-bold opacity-40">Extra Weather Details</h1>
           <div class="flex items-center justify-between mt-2">
             <div class="flex flex-col items-center">
               <p class="opacity-40 font-bold mt-2">Precipitation</p>
               <div class="w-14 mt-2">
-                <img class="rounded-full" src="" alt="" />
+                <img class="rounded-full" src="./assets/images/rain.png" alt="" />
               </div>
               <h1 id="precipitation" class="text-base font-bold mt-2">
                 {{ searchedCityData.current.precip_mm }}mm
@@ -185,7 +223,7 @@ const viewPopularCities = (city) => {
             <div class="flex flex-col items-center">
               <p class="opacity-40 font-bold mt-2">Humidity</p>
               <div class="w-14 mt-2">
-                <img class="rounded-full" src="" alt="" />
+                <img class="rounded-full" src="./assets/images/humidity.png" alt="" />
               </div>
               <h1 id="humidity" class="text-base font-bold mt-2">
                 {{ searchedCityData.current.humidity }}%
@@ -195,7 +233,7 @@ const viewPopularCities = (city) => {
             <div class="flex flex-col items-center">
               <p class="opacity-40 font-bold mt-2">Wind Speed</p>
               <div class="w-14 mt-2">
-                <img class="rounded-full" src="" alt="" />
+                <img class="rounded-full" src="./assets/images/wind.png" alt="" />
               </div>
               <h1 id="wind-speed" class="text-base font-bold mt-2">
                 {{ searchedCityData.current.wind_mph }}km/h
@@ -208,7 +246,11 @@ const viewPopularCities = (city) => {
       <div v-if="!showSearchedCities" class="Popular_cities">
         <div class="flex items-center justify-between">
           <p class="font-light text-2xl mt-8">Popular Cities</p>
-          <button class="font-light text-lg mt-8" id="view_weather">
+          <button
+            @click="viewCurrentCityWeather()"
+            class="font-light text-lg mt-8"
+            id="view_weather"
+          >
             View Weather based on your current location
           </button>
         </div>
